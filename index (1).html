@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bangla AI - ফ্রি বাংলা এআই চ্যাটবট</title>
+<meta name="description" content="Bangla AI: বাংলায় যেকোনো প্রশ্ন করুন, সঙ্গে সঙ্গে উত্তর পান। সম্পূর্ণ ফ্রি বাংলা এআই চ্যাটবট।">
+<style>
+:root{--bg:#f7f6f2;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--me:#2f6f4f;--meText:#fff;--bd:#e3e1da}
+@media (prefers-color-scheme:dark){:root{--bg:#171716;--card:#232321;--text:#ecebe6;--muted:#9a9990;--me:#3f8f66;--bd:#33332f}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:"Noto Sans Bengali",system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{padding:14px 16px;border-bottom:1px solid var(--bd);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+header button{background:none;border:1px solid var(--bd);color:var(--muted);border-radius:8px;padding:4px 10px;font:inherit;font-size:13px}
+#log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:85%;padding:10px 14px;border-radius:16px;line-height:1.6;white-space:pre-wrap;word-wrap:break-word}
+.u{align-self:flex-end;background:var(--me);color:var(--meText);border-bottom-right-radius:4px}
+.b{align-self:flex-start;background:var(--card);border:1px solid var(--bd);border-bottom-left-radius:4px}
+#hint{color:var(--muted);text-align:center;margin-top:30px}
+form{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--bd)}
+textarea{flex:1;resize:none;border:1px solid var(--bd);background:var(--card);color:var(--text);border-radius:12px;padding:10px 12px;font:inherit;max-height:120px}
+#send{background:var(--me);color:var(--meText);border:0;border-radius:12px;padding:0 18px;font:inherit;font-weight:600}
+#send:disabled{opacity:.5}
+</style>
+</head>
+<body>
+<header><h1 style="font-size:16px;margin:0">🤖 Bangla AI</h1><button id="clr" type="button">নতুন চ্যাট</button></header>
+<div id="log"><div id="hint">আপনার প্রশ্ন লিখুন, আমি উত্তর দেব।</div></div>
+<form id="f"><textarea id="t" rows="1" maxlength="2000" placeholder="প্রশ্ন লিখুন..."></textarea><button id="send" type="submit">পাঠান</button></form>
+<script>
+var hist=[],busy=false,log=document.getElementById("log"),t=document.getElementById("t"),btn=document.getElementById("send");
+var HINT='<div id="hint">আপনার প্রশ্ন লিখুন, আমি উত্তর দেব।</div>';
+function add(cls,txt){var d=document.createElement("div");d.className="m "+cls;d.textContent=txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+document.getElementById("clr").onclick=function(){hist=[];log.innerHTML=HINT};
+document.getElementById("f").onsubmit=async function(e){
+  e.preventDefault();var q=t.value.trim();if(!q||busy)return;
+  var h=document.getElementById("hint");if(h)h.remove();
+  t.value="";busy=true;btn.disabled=true;add("u",q);
+  var msgs=hist.concat([{role:"user",content:q}]);
+  var out=add("b","...");
+  try{
+    var r=await fetch("/.netlify/functions/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:msgs})});
+    var d=await r.json();
+    if(!r.ok){out.textContent=r.status===429?"এখন অনেক মানুষ ব্যবহার করছে, একটু পরে আবার চেষ্টা করুন।":"কিছু সমস্যা হয়েছে: "+(d.error||r.status);return}
+    out.textContent=d.text;
+    hist=msgs;hist.push({role:"assistant",content:d.text});
+  }catch(err){
+    out.textContent="ইন্টারনেট বা সার্ভারে সমস্যা হয়েছে, আবার চেষ্টা করুন।";
+  }finally{busy=false;btn.disabled=false}
+};
+</script>
+</body>
+</html>
